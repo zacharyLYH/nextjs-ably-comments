@@ -2,13 +2,8 @@
 
 import CommentForm from "@/component/comment-form";
 import CommentLister from "@/component/comment-lister";
-// import { useChannel } from "@ably-labs/react-hooks";
-import { useState } from "react";
-// import { configureAbly } from "@ably-labs/react-hooks";
-
-// configureAbly({
-//     authUrl: `${process.env.NEXT_PUBLIC_HOSTNAME}/api/createTokenRequest`,
-// });
+import { useEffect, useState } from "react";
+import { useAblyStore } from "@/lib/ablyStore"; // Update the import based on your file structure
 
 export interface CommentInterface {
     username: string;
@@ -24,12 +19,26 @@ const CommentMain: React.FC<CommentMainProps> = ({ prevComments }) => {
         prevComments || []
     );
 
-    // const [channel] = useChannel("comment-channel", (message) => {
-    //     // Add new incoming comment to the list of comments
-    //     setComments((comments) => {
-    //         return [...comments, message.data];
-    //     });
-    // });
+    const initializeAbly = useAblyStore((state) => state.initialize);
+
+    const closeAbly = useAblyStore((state) => state.close);
+
+    const channel = useAblyStore((state) => state.channel);
+
+    useEffect(() => {
+        initializeAbly();
+        return () => {
+            closeAbly(); // Close the Ably connection when the component unmounts
+        };
+    }, []);
+
+    useEffect(() => {
+        if (channel) {
+            channel.subscribe("comment", (message) => {
+                setComments((prevComments) => [...prevComments, message.data]);
+            });
+        }
+    }, [channel]);
 
     const submitComment = async (data: CommentInterface) => {
         try {
@@ -38,19 +47,18 @@ const CommentMain: React.FC<CommentMainProps> = ({ prevComments }) => {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(data),
             });
-            const username = data.username;
-            const comment = data.comment;
-            // channel.publish({
-            //     name: "comment",
-            //     data: {
-            //         username,
-            //         comment,
-            //     },
-            // });
+
+            if (channel) {
+                channel.publish({
+                    name: "comment",
+                    data,
+                });
+            }
         } catch (error) {
             console.error("An error occurred when creating a comment: ", error);
         }
     };
+
     return (
         <section>
             Comments ({comments.length})

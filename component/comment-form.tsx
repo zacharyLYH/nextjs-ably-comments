@@ -25,6 +25,7 @@ const CommentForm: React.FC<CommentFormInterface> = ({ submitter }) => {
             <div>
                 <label htmlFor="fullName">Full Name: </label>
                 <input
+                    className="text-black"
                     type="text"
                     id="fullName"
                     value={fullName}
@@ -39,6 +40,7 @@ const CommentForm: React.FC<CommentFormInterface> = ({ submitter }) => {
                     id="comment"
                     value={comment}
                     onChange={(e) => setComment(e.target.value)}
+                    className="text-black"
                     required
                 />
             </div>
